@@ -5,7 +5,7 @@
 
 using namespace std;
 
-void printVector(string name, const vector<int>* nums) {
+void printVector(string name, const vector<unsigned int>* nums) {
     cout << name << endl;
     for (int i = 0; i < nums->size(); ++i) {
         cout << i << " = " << nums->at(i) << endl;
@@ -13,7 +13,7 @@ void printVector(string name, const vector<int>* nums) {
     cout << endl;
 }
 
-double vecDistance(vector<int> vec, vector<int> oVec) {
+double vecDistance(vector<unsigned int> vec, vector<unsigned int> oVec) {
     double sum = 0;
     for (int i = 0; i < 3; ++i) {
         int diff = vec[i] - oVec[i];
@@ -22,36 +22,38 @@ double vecDistance(vector<int> vec, vector<int> oVec) {
     return sqrt(sum);
 }
 
-struct vec {
+struct hist {
     int clusterID;
     double minDist;
-    vector<int> x;
+    vector<unsigned int> x;
 
-    vec(int clusterID, double minDist, vector<int> x):
+    hist(int clusterID, double minDist, vector<unsigned int> x):
         clusterID(clusterID),
         minDist(minDist),
         x(move(x)) {}
 };
 
 int main() {
-    vector<int> x1 = {1, 5, 7};
-    vector<int> x2 = {9, 2, 1};
-    vector<int> x3 = {5, 5, 1};
-    vector<int> x4 = {0, 1, 3};
-    vector<int> x5 = {9, 8, 6};
-    vector<int> x6 = {2, 7, 1};
+    // HISTOGRAMS
+    vector<unsigned int> x1 = {1, 5, 7};
+    vector<unsigned int> x2 = {9, 2, 1};
+    vector<unsigned int> x3 = {5, 5, 1};
+    vector<unsigned int> x4 = {0, 1, 3};
+    vector<unsigned int> x5 = {9, 8, 6};
+    vector<unsigned int> x6 = {2, 7, 1};
 
-    vector<int> c0 = {1, 5, 7};
-    vector<int> c1 = {2, 7, 1};
-    vector<int> c2 = {9, 8, 6};
+    // CENTROIDS
+    vector<unsigned int> c0 = {1, 5, 7};
+    vector<unsigned int> c1 = {2, 7, 1};
+    vector<unsigned int> c2 = {9, 8, 6};
 
-    vector<vector<int>> centroids;
+    vector<vector<unsigned int>> centroids;
     centroids.reserve(3);
     centroids.push_back(c0);
     centroids.push_back(c1);
     centroids.push_back(c2);
 
-    vector<vec> hists;
+    vector<hist> hists; //  VECTOR OF HISTOGRAMS
     hists.reserve(6);
     hists.emplace_back(-1, __DBL_MAX__, x1);
     hists.emplace_back(-1, __DBL_MAX__, x2);
@@ -60,58 +62,61 @@ int main() {
     hists.emplace_back(-1, __DBL_MAX__, x5);
     hists.emplace_back(-1, __DBL_MAX__, x6);
 
-    for (auto& hist : hists) {
-        for (int i = 0; i < centroids.size(); ++i) {
-            double dist = vecDistance(hist.x, centroids[i]);
-            if (dist < hist.minDist) {
-                hist.minDist = dist;
-                hist.clusterID = i;
-            }
-        }
-    }
-
-    for (int i = 0; i < centroids.size(); ++i) {
-        printVector("centroid" + to_string(i), &centroids[i]);
-    }
-
-    vector<vector<int>> newCentroids;
-    newCentroids.reserve(3);
-    vector<int> newCentroid;
-    newCentroid.reserve(3);
-    newCentroid.push_back(0);
-    newCentroid.push_back(0);
-    newCentroid.push_back(0);
-    newCentroids.push_back(newCentroid);
-    newCentroids.push_back(newCentroid);
-    newCentroids.push_back(newCentroid);
-    vector<int> noCentroids;
-    noCentroids.reserve(3);
-    noCentroids.push_back(0);
-    noCentroids.push_back(0);
-    noCentroids.push_back(0);
-    for (auto& hist : hists) {
-        for (int i = 0; i < centroids.size(); ++i) {
-            if (hist.clusterID == i) {
-                noCentroids[i]++;
-                for (int j = 0; j < centroids.size(); ++j) {
-                    newCentroids[i][j] += hist.x[j];
+    // BEGIN OF K-MEANS
+    for (int l = 0; l < 10 ; ++l) {
+        for (auto& hist : hists) {
+            for (int i = 0; i < centroids.size(); ++i) {
+                double dist = vecDistance(hist.x, centroids[i]);
+                if (dist < hist.minDist) {
+                    hist.minDist = dist;
+                    hist.clusterID = i;
                 }
             }
         }
-    }
 
-    for (auto& nCentroid : newCentroids) {
-        for (int i = 0; i < nCentroid.size(); ++i) {
-            nCentroid[i] /= noCentroids[i];
+        vector<vector<unsigned int>> newCentroids;
+        newCentroids.reserve(3);
+        vector<unsigned int> newCentroid;
+        newCentroid.reserve(3);
+        vector<int> noCentroids;
+        noCentroids.reserve(3);
+        for (int m = 0; m < 3; ++m) {
+            newCentroid.push_back(0);
         }
-    }
+        for (int n = 0; n < 3; ++n) {
+            newCentroids.push_back(newCentroid);
+        }
+        for (int i1 = 0; i1 < 3; ++i1) {
+            noCentroids.push_back(0);
+        }
 
-    for (int k = 0; k < newCentroids.size(); ++k) {
-        centroids[k] = newCentroids[k];
-    }
+        // SUMMING UP CENTROIDS
+        for (auto& hist : hists) {
+            for (int i = 0; i < centroids.size(); ++i) {
+                if (hist.clusterID == i) {
+                    noCentroids[i]++;
+                    for (int j = 0; j < centroids.size(); ++j) {
+                        newCentroids[i][j] += hist.x[j];
+                    }
+                }
+            }
+        }
 
-    for (int i = 0; i < centroids.size(); ++i) {
-        printVector("after. centroid" + to_string(i), &centroids[i]);
+        // GETTING MEAN OF CENTROIDS
+        for (auto& nCentroid : newCentroids) {
+            for (int i = 0; i < nCentroid.size(); ++i) {
+                nCentroid[i] /= noCentroids[i];
+            }
+        }
+
+        // UPDATING CENTROIDS
+        for (int k = 0; k < newCentroids.size(); ++k) {
+            centroids[k] = newCentroids[k];
+        }
+
+        for (int i = 0; i < centroids.size(); ++i) {
+            printVector("after. centroid" + to_string(i), &centroids[i]);
+        }
     }
 
     return 0;
